@@ -131,7 +131,16 @@ class STLFormula(ABC):
                 c = a.conjuction(b)
 
         """
-        return STLTree([self,other],"and",[0,0])
+        formula = STLTree([self, other], "and", [0, 0])
+        try:
+            if (self.name is not None) & (other.name is not None):
+                formula.name = "%s and %s" % (self.name, other.name)
+        except Exception as e:
+            print(" spec1 & spec2  did not work", e)
+            formula.name = None
+
+        return formula
+
 
     def __and__(self, other):
         """
@@ -165,7 +174,18 @@ class STLFormula(ABC):
                 c = a.disjunction(b)
 
         """
-        return STLTree([self,other],"or",[0,0])
+        formula = STLTree([self,other],"or",[0,0])
+
+        try:
+            if (self.name is not None) & (other.name is not None):
+                formula.name = "%s or %s" % (self.name, other.name)
+
+        except Exception as e:
+            print("no name for or operator", e)
+            formula.name = None
+
+        return formula
+
 
     def __or__(self, other):
         """
@@ -192,8 +212,14 @@ class STLFormula(ABC):
         time_interval = [t for t in range(t1,t2+1)]
         subformula_list = [self for t in time_interval]
         formula = STLTree(subformula_list, "and", time_interval)
-        if self.name is not None:
-            formula.name = "always [%s,%s] %s" % (t1,t2,self.name)
+        try:
+            if self.name is not None:
+                formula.name = "[ ]_[%s,%s](%s)" % (t1,t2,self.name)
+
+        except Exception as e:
+            print("no name for always operator", e)
+            formula.name = None
+
         return formula
 
     def eventually(self, t1, t2):
@@ -215,8 +241,13 @@ class STLFormula(ABC):
         time_interval = [t for t in range(t1,t2+1)]
         subformula_list = [self for t in time_interval]
         formula = STLTree(subformula_list, "or", time_interval)
-        if self.name is not None:
-            formula.name = "eventually [%s,%s] %s" % (t1,t2,self.name)
+        try:
+            if self.name is not None:
+                formula.name = "<>_[%s,%s](%s)" % (t1,t2,self.name)
+        except Exception as e:
+            print("no name for eventually operator", e)
+            formula.name = None
+
         return formula
 
     def until(self, other, t1, t2):
@@ -246,8 +277,12 @@ class STLFormula(ABC):
             subformula_list.append(other)
             self_until_tprime.append(STLTree(subformula_list, "and", time_interval))
 
+        formula = STLTree(self_until_tprime, "or", [0 for i in range(len(self_until_tprime))])
+
         # Then we take the disjunction over each of these formulas
-        return STLTree(self_until_tprime, "or", [0 for i in range(len(self_until_tprime))])
+        if self.name is not None and other.name is not None:
+            formula.name = "(%s) U_[%s,%s](%s)" % (self.name, t1, t2, other.name)
+        return formula
 
     def get_all_conjunctive_state_formulas(self):
         """
